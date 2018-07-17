@@ -1,61 +1,22 @@
 const ExcelReader = require("node-excel-stream").ExcelReader;
 const ExcelWriter = require("node-excel-stream").ExcelWriter;
-
+const headers = require("./headers");
 const fs = require("fs");
 const db = require("./db");
-let dataStream = fs.createReadStream("input.xlsx");
+const INPUT_FILE_NAME = "input.xlsx";
+const OUTPUT_FILE_NAME = "output.xlsx";
+const SHEET_NAME = "100000 Records";
+
+console.time("solution");
+
+let dataStream = fs.createReadStream(INPUT_FILE_NAME);
 let reader = new ExcelReader(dataStream, {
 	sheets: [
 		{
-			name: "Sheet 1",
+			name: SHEET_NAME,
 			rows: {
 				headerRow: 1,
-				allowedHeaders: [
-					{
-						name: "Emp ID",
-						key: "empId"
-					},
-					{
-						name: "Name Prefix",
-						key: "namePrefix"
-					},
-					{
-						name: "First Name",
-						key: "firstName"
-					},
-					{
-						name: "Middle Initial",
-						key: "middleInitial"
-					},
-					{
-						name: "Last Name",
-						key: "lastName"
-					},
-					{
-						name: "Gender",
-						key: "gender"
-					},
-					{
-						name: "E Mail",
-						key: "email"
-					},
-					{
-						name: "Father's Name",
-						key: "fathersName"
-					},
-					{
-						name: "Mother's Name",
-						key: "mothersName"
-					},
-					{
-						name: "Mother's Maiden Name",
-						key: "mothersMaidenName"
-					},
-					{
-						name: "Date of Birth",
-						key: "dob"
-					}
-				]
+				allowedHeaders: headers
 			}
 		}
 	]
@@ -64,54 +25,9 @@ let reader = new ExcelReader(dataStream, {
 let writer = new ExcelWriter({
 	sheets: [
 		{
-			name: "Sheet 1",
-			key: "tests",
-			headers: [
-				{
-					name: "Emp ID",
-					key: "empId"
-				},
-				{
-					name: "Name Prefix",
-					key: "namePrefix"
-				},
-				{
-					name: "First Name",
-					key: "firstName"
-				},
-				{
-					name: "Middle Initial",
-					key: "middleInitial"
-				},
-				{
-					name: "Last Name",
-					key: "lastName"
-				},
-				{
-					name: "Gender",
-					key: "gender"
-				},
-				{
-					name: "E Mail",
-					key: "email"
-				},
-				{
-					name: "Father's Name",
-					key: "fathersName"
-				},
-				{
-					name: "Mother's Name",
-					key: "mothersName"
-				},
-				{
-					name: "Mother's Maiden Name",
-					key: "mothersMaidenName"
-				},
-				{
-					name: "Date of Birth",
-					key: "dob"
-				}
-			]
+			name: SHEET_NAME,
+			key: SHEET_NAME,
+			headers
 		}
 	]
 });
@@ -119,16 +35,13 @@ let writer = new ExcelWriter({
 async function saveToFile(rows) {
 	try {
 		for (let i = 0; i < rows.length; i++) {
-			await writer.addData("tests", rows[i]);
+			await writer.addData(SHEET_NAME, rows[i]);
 		}
 		const stream = await writer.save();
-		const fileStream = fs.createWriteStream("output.xlsx");
-		fileStream.on("open", () => {
-			console.log("stream opened");
-		});
+		const fileStream = fs.createWriteStream(OUTPUT_FILE_NAME);
 		fileStream.on("close", () => {
+			console.timeEnd("write");
 			console.timeEnd("solution");
-			console.log("stream closed");
 			process.exit();
 		});
 		stream.pipe(fileStream);
@@ -140,9 +53,8 @@ async function saveToFile(rows) {
 const rows = [];
 const fatherNames = [];
 console.time("parse");
-console.time("solution");
 reader
-	.eachRow((rowData, rowNum, sheetSchema) => {
+	.eachRow(rowData => {
 		rows.push(rowData);
 		fatherNames.push(rowData.fathersName);
 	})
@@ -155,10 +67,10 @@ reader
 		}
 		console.timeEnd("sort");
 		console.time("insert");
-
 		db.User.bulkCreate(rows)
 			.then(() => {
 				console.timeEnd("insert");
+				console.time("write");
 				saveToFile(rows);
 			})
 			.catch(error => {
