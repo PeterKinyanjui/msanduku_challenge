@@ -2,7 +2,7 @@ const Sequelize = require("sequelize");
 const sequelize = new Sequelize(
 	"msanduku_challenge",
 	"root",
-	"futuresequence",
+	"",
 	{
 		host: "localhost",
 		dialect: "mysql",

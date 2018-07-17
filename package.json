@@ -12,6 +12,7 @@
     "excel": "^1.0.0",
     "mysql2": "^1.5.3",
     "node-excel-stream": "^1.0.1",
+    "node-xlsx": "^0.12.1",
     "read-excel-file": "^2.0.1",
     "sequelize": "^4.38.0",
     "xlsx": "^0.13.2"
